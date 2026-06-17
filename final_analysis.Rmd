@@ -10,23 +10,43 @@ output: html_document
 library(cfbfastR)
 library(tidyverse)
 ```
+
 ### We pulled schedule data from espn_cfb_schedule function
 ```{r}
-years =c(2000:2005)
+years = c(2000:2005)
 data_func <- function(years) {
     espn_cfb_schedule(year = years)
 }
-schedule<- map_dfr(years, data_func)
+schedule <- map_dfr(years, data_func)
 ```
 
 ### Importing our Csv mapping file
 ```{r}
 colleges <- read_csv("colleges.csv")
+offenses <- read.csv("offenses.csv")
 ```
 
 ### Filtering out the schedule for our 26 teams
 ```{r}
-Final_filtered_schedule<-schedule%>%filter(home_team_full %in% college$NCAA_Team | away_team_full %in% college$NCAA_Team)
-Final_filtered_schedule%>%select(matchup,season,game_date,home_team_full,home_team_name,away_team_full,away_team_name,home_win,away_win)
+Final_filtered_schedule <- schedule %>%
+    filter(home_team_full %in% colleges$NCAA_Team | away_team_full %in% colleges$NCAA_Team)
+
+Final_filtered_schedule <- Final_filtered_schedule %>% 
+    select(matchup,
+           season,
+           game_id,
+           game_date,
+           home_team_full,
+           home_team_name,
+           away_team_full,
+           away_team_name,
+           home_win,
+           away_win)
 names(Final_filtered_schedule)
+```
+
+```{r deciding-duplictae-ORIs}
+
+
+
 ```

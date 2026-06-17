@@ -41,6 +41,9 @@ awk -F, '
 # contains "*assault*" or "*vandalism*". store those rows in a file called offenses.csv
 
 > offenses.csv # creates or empties the file before the loop
+
+head -n 1 nibrs_offense_segment_2000.csv > offenses.csv
+
 for year in {2000..2005}
 do
     awk -F, '
