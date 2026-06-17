@@ -32,7 +32,7 @@ awk -F, '
         if(k in key)
             print $1 "," key[k]
     }
-    ' colleges.csv batch_header_2000_2005.csv | sort -u > ori_and_team_names.csv
+    ' colleges.csv batch_header_2000_2005.csv | sort -u > unfiltered_ori_and_team_names.csv
 
 #-------------------------------------------------------------------------------------
 #PSEUDOCODE
@@ -42,7 +42,7 @@ awk -F, '
 
 > offenses.csv # creates or empties the file before the loop
 
-head -n 1 nibrs_offense_segment_2000.csv > offenses.csv
+head -n 1 nibrs_offense_segment_2000.csv > offenses.csv # Keep the header
 
 for year in {2000..2005}
 do
@@ -53,5 +53,5 @@ do
         }
 
         ($1 in ori) && (tolower($7) ~ /assault/ || tolower($7) ~ /vandalism/)
-        ' ori_and_team_names.csv nibrs_offense_segment_${year}.csv >> offenses.csv
+        ' unfiltered_ori_and_team_names.csv nibrs_offense_segment_${year}.csv >> offenses.csv
 done

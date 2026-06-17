@@ -5,14 +5,15 @@ date: "`r Sys.Date()`"
 output: html_document
 ---
 
-## Schedule Extraction and matching
 ```{r setup, message=FALSE}
 library(cfbfastR)
 library(tidyverse)
 ```
 
-### We pulled schedule data from espn_cfb_schedule function
-```{r}
+### College Football Data Extraction
+```{r import-cfb-data}
+# Pull schedule data from espn_cfb_schedule function
+
 years = c(2000:2005)
 data_func <- function(years) {
     espn_cfb_schedule(year = years)
@@ -20,18 +21,20 @@ data_func <- function(years) {
 schedule <- map_dfr(years, data_func)
 ```
 
-### Importing our Csv mapping file
-```{r}
+### Crime Data Extraction
+```{r import-crime-data}
 colleges <- read_csv("colleges.csv")
-offenses <- read.csv("offenses.csv")
+offenses <- read_csv("offenses.csv")
+unfiltered_ori_and_team_names <- read_csv("unfiltered_ori_and_team_names.csv", col_names = c("ori", "team_name"))
 ```
 
-### Filtering out the schedule for our 26 teams
-```{r}
-Final_filtered_schedule <- schedule %>%
-    filter(home_team_full %in% colleges$NCAA_Team | away_team_full %in% colleges$NCAA_Team)
+### Filter College Data To Out 26 Teams
+```{r filter-colleges}
+filtered_schedule <- schedule %>%
+    filter(home_team_full %in% colleges$NCAA_Team | 
+           away_team_full %in% colleges$NCAA_Team)
 
-Final_filtered_schedule <- Final_filtered_schedule %>% 
+filtered_schedule <- filtered_schedule %>% 
     select(matchup,
            season,
            game_id,
@@ -42,11 +45,48 @@ Final_filtered_schedule <- Final_filtered_schedule %>%
            away_team_name,
            home_win,
            away_win)
-names(Final_filtered_schedule)
 ```
 
-```{r deciding-duplictae-ORIs}
+### Remove Duplicate ORIs
+```{r deciding-duplicate-ORIs}
 
+# Namaes of teams that have > 1 ORI value
+duplicate_team_names <- unfiltered_ori_and_team_names %>%
+    group_by(team_name) %>%
+    summarise(count = n()) %>%
+    filter(count > 1)%>%
+    select(team_name)
 
+# Names and ORIs of teams that have > 1 ORI value
+duplicate_ori <- unfiltered_ori_and_team_names %>%
+    filter(team_name %in% duplicate_team_names$team_name) 
 
+# ORIs of teams that have > 1 ORI value with the associated number of offenses
+offense_counts_by_duplicate_ori <- offenses %>% 
+    filter(ori %in% duplicate_ori$ori)%>%
+    group_by(ori)%>%
+    summarise(count = n())
+
+# Choose the ORI value with the highest number of offenses
+filtered_duplicates <- full_join(offense_counts_by_duplicate_ori, duplicate_ori, by = 'ori') %>%
+    filter(is.na(count) == FALSE) %>% # The NA values mean there're no offenses associated with that ORI
+    group_by(team_name) %>% 
+    filter(count == max(count))
+
+# Create a new CSV file with no duplicates
+unfiltered_ori_and_team_names %>%
+    filter(!(ori %in% duplicate_ori$ori) | (ori %in% filtered_duplicates$ori) ) %>%  # Keep rows who don't have duplicates + Add the filtered duplicates
+    write_csv("ori_and_team_names.csv")
+
+```
+
+### Join Crime and College Football Data
+```{r joining-crime-and-cfb}
+ori_and_team_names <- read_csv("ori_and_team_names.csv")
+
+# UP TO HERE ---------------------------------------------------------------------
+filtered_schedule <- filtered_schedule %>%
+    rename(team_name = home_team_full)
+
+full_join(Final_filtered_schedule, final_ori_team_names, by = "team_name")
 ```
