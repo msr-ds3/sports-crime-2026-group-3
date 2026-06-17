@@ -83,10 +83,26 @@ unfiltered_ori_and_team_names %>%
 ### Join Crime and College Football Data
 ```{r joining-crime-and-cfb}
 ori_and_team_names <- read_csv("ori_and_team_names.csv")
+offenses <- offenses %>%
+            filter(ori %in% ori_and_team_names$ori)
 
+offenses%>%group_by(incident_date,ori)
+filtered_schedule
 # UP TO HERE ---------------------------------------------------------------------
-filtered_schedule <- filtered_schedule %>%
-    rename(team_name = home_team_full)
-
-full_join(Final_filtered_schedule, final_ori_team_names, by = "team_name")
+filtered_schedule <- filtered_schedule %>% 
+    pivot_longer(names_to='home/away',
+                cols = c(home_team_full,away_team_full),
+                values_to = "team_name")
+ori_with_schedule%>%group_by(incident_date,ori)
+ori_with_schedule<-full_join(filtered_schedule, ori_and_team_names,by = "team_name")#%>%#select(ori,team_name)
+ori_with_schedule <-ori_with_schedule%>%rename(incident_date="game_date")
+ori_with_schedule
+offenses
+ori_and_team_names
+test_frame<-full_join(ori_with_schedule,offenses,by=c('ori','incident_date'))
+test_frame%>%view()
+test_frame<-full_join(filtered_schedule, final_ori_team_names, by = "team_name")%>%view()
+```
+```{r}
+offenses%>%filter(year(incident_date)<=2001)%>%ggplot(aes(x=incident_date))+geom_histogram()
 ```
