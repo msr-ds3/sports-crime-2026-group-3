@@ -47,11 +47,19 @@ head -n 1 nibrs_offense_segment_2000.csv > offenses.csv # Keep the header
 for year in {2000..2005}
 do
     awk -F, '
-        NR==FNR {
-            ori[$1]
-            next
+        NR==FNR { ori[$1]; next}
+        FNR==1 {next} # skip the header in each file
+        {
+            # only keep offenses within the football season
+            d = $6 # incident_date
+            y = substr(d, 1, 4) #
+            start = y "-08-20" # start of the season = Aug 20
+            end   = y "-12-10" # end of the season = Dec 10
         }
-
-        ($1 in ori) && (tolower($7) ~ /assault offenses/ || tolower($7) ~ /vandalism/)
+        ($1 in ori) && 
+        (tolower($7) ~ /assault offenses/ || tolower($7) ~ /vandalism/) && 
+        (d <= end && d >= start)
         ' unfiltered_ori_and_team_names.csv nibrs_offense_segment_${year}.csv >> offenses.csv
 done
+
+
