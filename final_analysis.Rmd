@@ -209,5 +209,4 @@ tbl2 # display table
 # (with standard errors), broken out by whether a home game, away game, 
 # or no game was played. 
 
-
 ```
