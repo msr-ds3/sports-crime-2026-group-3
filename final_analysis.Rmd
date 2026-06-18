@@ -52,7 +52,6 @@ offenses <- offenses %>%
     mutate(offense_type = case_when(str_detect(ucr_offense_code, pattern = paste("assault")) ~ "assault",
                                     str_detect(ucr_offense_code, pattern = paste("vandalism")) ~ "vandalism")) %>%
     select(-ucr_offense_code)
-
 # College Data 
 # only from our 26 schools/teams
 filtered_schedule <- schedule %>%
@@ -105,10 +104,13 @@ ori_and_team_names <- read_csv("ori_and_team_names.csv")
 
 # filter offense data with new requirements
 offenses <- offenses %>%
+            filter(is.na(offense_type)==FALSE) #filtering offences where type == NA
+offenses <- offenses %>%
     filter(ori %in% ori_and_team_names$ori) %>% # filter out duplicate ori offenses
     group_by(ori, incident_date, offense_type) %>% # find count of assault and vandalism for each day and ori combo
     summarize(count = n()) %>%
     pivot_wider(names_from = offense_type, values_from = count, values_fill = 0) # get columns for assault and vandalism counts
+
 ```
 
 ### Join Crime and College Football Data
@@ -125,6 +127,23 @@ schedule_with_ori <- full_join(filtered_schedule_long, ori_and_team_names, by = 
     filter(is.na(ori) == FALSE) %>% # filter out the teams that aren't on our list
     rename(incident_date = "game_date") # rename to join
 
+# checking for duplicates in our schedlue data
+duplicates <- schedule_with_ori%>%
+    group_by(incident_date,ori) %>%
+    summarise(count = n()) %>%
+    filter(count != 1)%>%select(-count)
+
+#creating duplicates that needed to be removed    
+duplicate_table <- inner_join(duplicates,schedule_with_ori) %>%
+    filter(home_team_name %in% c("Fighting Illini","Falcons","Hokies")==FALSE) #those were fake entries
+
+#filtering those duplicates form our schedule data frame 
+schedule_with_ori <- anti_join(schedule_with_ori,duplicate_table,
+        by = c("incident_date",
+        "game_id",
+        "home_team_name",
+        "away_team_name","ori")) #removing entries that are in duplicates from schedule_with_ori table
+
 # join the cfb and offenses data on ORI and date
 test_frame <- full_join(offenses, schedule_with_ori, by = c('ori','incident_date')) %>%
     mutate(game_status = case_when((is.na(ori) == FALSE) & (home_or_away == "home_team") ~ "home_game", 
@@ -132,11 +151,28 @@ test_frame <- full_join(offenses, schedule_with_ori, by = c('ori','incident_date
                                     is.na(game_id) ~ "no_game"))
 
 ```
-```{r nabin-test}
-offenses %>% 
-    filter(year(incident_date) <= 2001) %>%
-    ggplot(aes(x = incident_date)) +
-    geom_histogram()
+
+### Template Table and Final dataframe creation
+```{r template table and final dataframe creation}
+# Here we are creating our final dataframe and populating them with dates and ori combination
+year=c(2000:2005) # gets the array from 2000 to 2005
+#creating a function to create a dataframe with dates
+table_func <- function(years) {
+            data.frame(day = seq(as.Date(paste0(years,"-08-20")),
+            as.Date(paste0(years,"-12-10")),
+            by = 'day'))
+}
+#assembling all dates dataframe into one table
+dates_table <- map_dfr(year, table_func)
+
+# Our table with all entries of date and ori
+template_table <- expand_grid(dates_table,ori_and_team_names$ori) %>%
+                  rename(ori = "ori_and_team_names$ori")# renaming for joining purpose
+
+test_frame <- rename(test_frame,day = incident_date) # renaming for joining purpose
+# Final table with all entries
+final_table <- left_join(template_table,test_frame,by=c("day","ori")) %>%
+                        replace_na(list(assault = 0,vandalism = 0)) #filling in zeros for NA's
 ```
 
 ## Table 2: Distribution of Game Days by Day of the Week
@@ -149,7 +185,7 @@ num_of_games_per_dotw <- filtered_schedule %>%
 
 # Calculate number of offenses per day of the week
 num_of_offenses_per_dotw <- test_frame %>%
-    mutate(day_of_the_week = wday(incident_date, label = TRUE)) %>%
+    mutate(day_of_the_week = wday(day, label = TRUE)) %>%
     group_by(day_of_the_week) %>%
     summarize(num_of_offenses = n())
 
