@@ -43,13 +43,9 @@ unfiltered_ori_and_team_names <- read_csv("unfiltered_ori_and_team_names.csv", c
 # only select certain columns
 offenses <- offenses %>%
     select(ori,
-           year,
-           state,
            state_abb,
-           incident_number,
            incident_date,
-           ucr_offense_code,
-           unique_incident_id)
+           ucr_offense_code)
 
 # add a field to identify the offense type
 offenses <- offenses %>%
@@ -64,9 +60,7 @@ filtered_schedule <- schedule %>%
            away_team_full %in% colleges$NCAA_Team)
 
 filtered_schedule <- filtered_schedule %>% 
-    select(matchup,
-           season,
-           game_id,
+    select(game_id,
            game_date,
            home_team_full,
            home_team_name,
@@ -78,7 +72,6 @@ filtered_schedule <- filtered_schedule %>%
 
 ### Remove Duplicate ORIs
 ```{r deciding-duplicate-ORIs, results='hide'}
-
 # Names of teams that have > 1 ORI value
 duplicate_team_names <- unfiltered_ori_and_team_names %>%
     group_by(team_name) %>%
@@ -113,7 +106,9 @@ ori_and_team_names <- read_csv("ori_and_team_names.csv")
 # filter offense data with new requirements
 offenses <- offenses %>%
     filter(ori %in% ori_and_team_names$ori) %>% # filter out duplicate ori offenses
-    mutate(offense_id = row_number()) # assign unique ID to each incident
+    group_by(ori, incident_date, offense_type) %>% # find count of assault and vandalism for each day and ori combo
+    summarize(count = n()) %>%
+    pivot_wider(names_from = offense_type, values_from = count, values_fill = 0) # get columns for assault and vandalism counts
 ```
 
 ### Join Crime and College Football Data
@@ -154,7 +149,6 @@ num_of_games_per_dotw <- filtered_schedule %>%
 
 # Calculate number of offenses per day of the week
 num_of_offenses_per_dotw <- test_frame %>%
-    # filter(game_status != "no_game") %>%
     mutate(day_of_the_week = wday(incident_date, label = TRUE)) %>%
     group_by(day_of_the_week) %>%
     summarize(num_of_offenses = n())
@@ -171,4 +165,13 @@ totals_row <- tibble(
 tbl2 <- bind_rows(joined_tbl, totals_row) # Append totals
 
 tbl2 # display table
+```
+
+## Distribution of Offenses on Saturdays
+```{r distribution-of-offenses-on-saturdays}
+# Create figures showing the mean number of offenses (assaults or vandalisms) on Saturdays 
+# (with standard errors), broken out by whether a home game, away game, 
+# or no game was played. 
+
+
 ```
