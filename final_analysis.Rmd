@@ -16,13 +16,13 @@ knitr::opts_chunk$set(
 library(cfbfastR)
 library(tidyverse)
 library(lubridate)
+library(stringr)
 ```
 
 ## Data Extraction & Wrangling
 ### College Football Data Extraction
 ```{r import-cfb-data, results='hide'}
 # Pull schedule data from espn_cfb_schedule function
-
 years = c(2000:2005)
 data_func <- function(years) {
     espn_cfb_schedule(year = years)
@@ -39,7 +39,8 @@ unfiltered_ori_and_team_names <- read_csv("unfiltered_ori_and_team_names.csv", c
 
 ### Filter Crime Data & College Data
 ```{r filter-colleges, results='hide'}
-# Crime Data - only select columns
+# Crime Data
+# only select certain columns
 offenses <- offenses %>%
     select(ori,
            year,
@@ -50,8 +51,14 @@ offenses <- offenses %>%
            ucr_offense_code,
            unique_incident_id)
 
+# add a field to identify the offense type
+offenses <- offenses %>%
+    mutate(offense_type = case_when(str_detect(ucr_offense_code, pattern = paste("assault")) ~ "assault",
+                                    str_detect(ucr_offense_code, pattern = paste("vandalism")) ~ "vandalism")) %>%
+    select(-ucr_offense_code)
 
-# College Data - only from our 26 schools/teams
+# College Data 
+# only from our 26 schools/teams
 filtered_schedule <- schedule %>%
     filter(home_team_full %in% colleges$NCAA_Team | 
            away_team_full %in% colleges$NCAA_Team)
@@ -72,7 +79,7 @@ filtered_schedule <- filtered_schedule %>%
 ### Remove Duplicate ORIs
 ```{r deciding-duplicate-ORIs, results='hide'}
 
-# Namaes of teams that have > 1 ORI value
+# Names of teams that have > 1 ORI value
 duplicate_team_names <- unfiltered_ori_and_team_names %>%
     group_by(team_name) %>%
     summarise(count = n()) %>%
@@ -100,18 +107,44 @@ unfiltered_ori_and_team_names %>%
     filter(!(ori %in% duplicate_ori$ori) | (ori %in% filtered_duplicates$ori) ) %>%  # Keep rows who don't have duplicates + Add the filtered duplicates
     write_csv("ori_and_team_names.csv")
 
-
-```
-
-## Table 2: Distribution of Game Days by Day of the Week
-```{r replicate-table-2}
 # importing our ori and team mapping
 ori_and_team_names <- read_csv("ori_and_team_names.csv")
 
 # filter out duplicate ori offenses
 offenses <- offenses %>%
-            filter(ori %in% ori_and_team_names$ori)
+    filter(ori %in% ori_and_team_names$ori)
+```
 
+### Join Crime and College Football Data
+```{r joining-crime-and-cfb, results='hide'}
+# restructure data to have 1 column with the team name
+filtered_schedule_long <- filtered_schedule %>% 
+    rename(home_team = "home_team_full", away_team = "away_team_full") %>% # to simplify the values in home_or_away
+    pivot_longer(names_to = 'home_or_away',
+                 values_to = "team_name",
+                 cols = c(home_team, away_team))
+
+# attach ORIs to the game data
+schedule_with_ori <- full_join(filtered_schedule_long, ori_and_team_names, by = "team_name") %>%
+    filter(is.na(ori) == FALSE) %>% # filter out the teams that aren't on our list
+    rename(incident_date = "game_date") # rename to join
+
+# join the cfb and offenses data on ORI and date
+test_frame <- full_join(offenses, schedule_with_ori, by = c('ori','incident_date')) %>%
+    mutate(game_status = case_when((is.na(ori) == FALSE) & (home_or_away == "home_team") ~ "home_game", 
+                                   (is.na(ori) == FALSE) & (home_or_away == "away_team") ~ "away_game",
+                                    is.na(game_id) ~ "no_game"))
+
+```
+```{r nabin-test}
+offenses %>% 
+    filter(year(incident_date) <= 2001) %>%
+    ggplot(aes(x = incident_date)) +
+    geom_histogram()
+```
+
+## Table 2: Distribution of Game Days by Day of the Week
+```{r replicate-table-2}
 # Calculate number of games per day of the week
 num_of_games_per_dotw <- filtered_schedule %>% 
     mutate(day_of_the_week = wday(game_date, label = TRUE)) %>%
@@ -131,30 +164,9 @@ joined_tbl <- full_join(num_of_games_per_dotw, num_of_offenses_per_dotw, by = "d
 totals_row <- tibble(
   day_of_the_week = "Total",
   num_of_games = sum(joined_tbl$num_of_games),
-  num_of_offenses = sum(joined_tbl$num_of_offenses)
-)
+  num_of_offenses = sum(joined_tbl$num_of_offenses)) # INC --------------------------------------------
 
-final_tbl <- bind_rows(joined_tbl, totals_row) # Append totals
+tbl2 <- bind_rows(joined_tbl, totals_row) # Append totals
 
-final_tbl
-```
-
-## Join Crime and College Football Data
-```{r joining-crime-and-cfb}
-offenses%>%group_by(incident_date,ori)
-filtered_schedule
-# UP TO HERE ---------------------------------------------------------------------
-filtered_schedule <- filtered_schedule %>% 
-    pivot_longer(names_to='home/away',
-                cols = c(home_team_full,away_team_full),
-                values_to = "team_name")
-ori_with_schedule<-full_join(filtered_schedule, ori_and_team_names,by = "team_name")#%>%#select(ori,team_name)
-ori_with_schedule <-ori_with_schedule%>%rename(incident_date="game_date")
-ori_with_schedule
-offenses
-ori_and_team_names
-test_frame<-full_join(ori_with_schedule,offenses,by=c('ori','incident_date'))
-```
-```{r}
-offenses%>%filter(year(incident_date)<=2001)%>%ggplot(aes(x=incident_date))+geom_histogram()
+tbl2
 ```

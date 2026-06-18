@@ -52,6 +52,6 @@ do
             next
         }
 
-        ($1 in ori) && (tolower($7) ~ /assault/ || tolower($7) ~ /vandalism/)
+        ($1 in ori) && (tolower($7) ~ /assault offenses/ || tolower($7) ~ /vandalism/)
         ' unfiltered_ori_and_team_names.csv nibrs_offense_segment_${year}.csv >> offenses.csv
 done
