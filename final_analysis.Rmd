@@ -124,7 +124,7 @@ filtered_schedule_long <- filtered_schedule %>%
 
 # attach ORIs to the game data
 schedule_with_ori <- full_join(filtered_schedule_long, ori_and_team_names, by = "team_name") %>%
-    filter(is.na(ori) == FALSE) %>% # filter out the teams that aren't on our list
+    filter(is.na(ori) == FALSE) %>% # filter out the rows where teams aren't on our list
     rename(incident_date = "game_date") # rename to join
 
 # checking for duplicates in our schedlue data
@@ -183,20 +183,20 @@ num_of_games_per_dotw <- filtered_schedule %>%
     group_by(day_of_the_week) %>%
     summarize(num_of_games = n())
 
-# Calculate number of offenses per day of the week
-num_of_offenses_per_dotw <- test_frame %>%
-    mutate(day_of_the_week = wday(day, label = TRUE)) %>%
-    group_by(day_of_the_week) %>%
-    summarize(num_of_offenses = n())
-
+# Calculate number of {DOTW} observered over the cfb season over 2000-2005 for all ORIs
+num_of_observatiions_per_dotw <- template_table %>% # about 13 (num of {DOTW}) * 6 (years) * 26 (ORIs / num of agencies)
+    mutate(day_of_the_week = wday(game_date, label = TRUE)) %>%
+    group_by(day_of_the_week, ori) %>%
+    summarize(num_of_oberservations = n())
+    
 # Merge results
-joined_tbl <- full_join(num_of_games_per_dotw, num_of_offenses_per_dotw, by = "day_of_the_week")
+joined_tbl <- full_join(num_of_games_per_dotw, num_of_observations_per_dotw, by = "day_of_the_week")
 
 # Add totals row
 totals_row <- tibble(
   day_of_the_week = "Total",
   num_of_games = sum(joined_tbl$num_of_games),
-  num_of_offenses = sum(joined_tbl$num_of_offenses))
+  num_of_offenses = sum(joined_tbl$num_of_observations))
 
 tbl2 <- bind_rows(joined_tbl, totals_row) # Append totals
 
@@ -204,7 +204,7 @@ tbl2 # display table
 ```
 
 ## Distribution of Offenses on Saturdays
-```{r distribution-of-offenses-on-saturdays}
+```{r distribution-of-offenses-on-saturdays, results='hide'}
 # Create figures showing the mean number of offenses (assaults or vandalisms) on Saturdays 
 # (with standard errors), broken out by whether a home game, away game, 
 # or no game was played. 
