@@ -105,12 +105,12 @@ ori_and_team_names <- read_csv("ori_and_team_names.csv")
 
 # filter offense data with new requirements
 offenses <- offenses %>%
-            filter(is.na(offense_type)==FALSE) #filtering offences where type == NA
-offenses <- offenses %>%
+    filter(is.na(offense_type)==FALSE) %>% #filtering offences where type == NA
     filter(ori %in% ori_and_team_names$ori) %>% # filter out duplicate ori offenses
     group_by(ori, incident_date, offense_type) %>% # find count of assault and vandalism for each day and ori combo
     summarize(count = n()) %>%
-    pivot_wider(names_from = offense_type, values_from = count, values_fill = 0) # get columns for assault and vandalism counts
+    pivot_wider(names_from = offense_type, values_from = count, values_fill = 0) %>% # get columns for assault and vandalism counts
+    left_join(ori_and_team_names, by = c("ori")) # add team name
 
 ```
 
@@ -129,7 +129,7 @@ schedule_with_ori <- full_join(filtered_schedule_long, ori_and_team_names, by = 
     rename(incident_date = "game_date") # rename to join
 
 # checking for duplicates in our schedlue data
-duplicates <- schedule_with_ori%>%
+duplicates <- schedule_with_ori %>%
     group_by(incident_date, ori) %>%
     summarise(count = n()) %>%
     filter(count != 1) %>%
@@ -147,11 +147,10 @@ schedule_with_ori <- anti_join(schedule_with_ori, duplicate_table,
                                       "away_team_name","ori")) #removing entries that are in duplicates from schedule_with_ori table
 
 # join the cfb and offenses data on ORI and date
-test_frame <- full_join(offenses, schedule_with_ori, by = c('ori','incident_date')) %>%
+test_frame <- full_join(offenses, schedule_with_ori, by = c('ori', 'incident_date', 'team_name')) %>%
     mutate(game_status = case_when((is.na(ori) == FALSE) & (home_or_away == "home_team") ~ "home_game", 
                                    (is.na(ori) == FALSE) & (home_or_away == "away_team") ~ "away_game",
                                     is.na(game_id) ~ "no_game"))
-
 ```
 
 ### Create Final Data Frame
@@ -173,13 +172,14 @@ dates_table <- map_dfr(years, table_func)
 
 # creating a template df with 1 row for each date and ORI combo
 template_table <- expand_grid(dates_table, ori_and_team_names$ori) %>%
-                  rename(ori = "ori_and_team_names$ori") # renaming for joining purpose
+    rename(ori = "ori_and_team_names$ori") # renaming for joining purpose
+    left_join(ori_and_team_names, by = "ori") # map team name to ori in template table               
 
 test_frame <- test_frame %>% 
     rename(day = incident_date) # renaming for joining purpose
 
 # populate template table with the data that we have
-final_table <- left_join(template_table, test_frame, by = c("day", "ori")) %>%
+final_table <- left_join(template_table, test_frame, by = c("day", "ori", "team_name")) %>%
     replace_na(list(assault = 0, vandalism = 0, game_status = "no_game")) # filling in zeros for NAs in offense counts
 ```
 
@@ -238,11 +238,9 @@ final_table %>%
 ```{r distribution-of-offenses-on-saturdays-per-team}
 # Per-team plot: Show the same comparison separately for each college town / team instead 
 # of aggregated across all teams.
-# INC -------------------------------------------- All teams have 0 data in "no_game" + created table where "team" is NA
 final_table %>% 
     mutate(day_of_the_week = wday(day, label = TRUE)) %>%
     filter(day_of_the_week == "Sat") %>% 
-    # filter(is.na(game_id) == FALSE) %>% # removed all rows with no games (ie no teams)
     group_by(game_status, team_name) %>%
     summarize(avg_offenses = mean(assault + vandalism), 
               std_error = sd(assault + vandalism) / sqrt(n())) %>%
