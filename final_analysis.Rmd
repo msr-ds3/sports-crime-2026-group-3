@@ -104,10 +104,10 @@ quantile_generator <- function(table, type){
     select(table,type) %>%
     summarise(mean = mean(.data[[type]]),
         std = sd(.data[[type]]),
-        Q1 = quantile(.data[[type]],0.25),
-        Q2 = quantile(.data[[type]], 0.5),
+        Q1 = quantile(.data[[type]], 0.25),
+        Q2 = quantile(.data[[type]], 0.50),
         Q3 = quantile(.data[[type]], 0.75),
-        Q4 = quantile(.data[[type]], 0.95))
+        Q4 = quantile(.data[[type]], 0.90))
 }
 
 types = c("assault", "vandalism") # type of offences
@@ -156,6 +156,17 @@ appendix %>% kable()
 # fancier negative binomial model the authors fit.) Compare your findings to the paper's 
 # (+9% assaults and +18% vandalism for home games, with no effect for away games).
 
-assaults_model <- final_table %>% lm(assault ~ game_status)
+# INC ---------------------------------------------------------------------------------------
+regression_df <- final_table %>%
+    mutate(day_of_the_week = factor(wday(day, label = TRUE)),
+           month = factor(month(day)),
+           year = factor(year(day)),
+           )
+
+assaults_model <- lm(assault ~ game_status + day_of_the_week + month + year, data = regression_df)
 summary(assaults_model)
+
+vandalism_model <- lm(vandalism ~ game_status, data = regression_df)
+summary(vandalism_model)
+
 ```
