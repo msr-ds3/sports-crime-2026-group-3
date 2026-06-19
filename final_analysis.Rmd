@@ -17,6 +17,7 @@ library(cfbfastR)
 library(tidyverse)
 library(lubridate)
 library(stringr)
+library(knitr)
 ```
 
 ## Data Extraction & Wrangling
@@ -259,7 +260,51 @@ final_table %>%
 
 ### Appendix: Descriptive Statistics for Count Variables
 ```{r replicate-appendix}
+# function to get individual stats
+quantile_generator <- function(table,type){
+    select(table,type) %>%
+    summarise(mean = mean(.data[[type]]),
+        std = sd(.data[[type]]),
+        Q1 = quantile(.data[[type]],0.25),
+        Q2 = quantile(.data[[type]], 0.5),
+        Q3 = quantile(.data[[type]], 0.75),
+        Q4 = quantile(.data[[type]], 0.95))
+}
+types = c("assault","vandalism") #type of offences
+#mapping out from our funciton to collect stats
+all_day <- map_dfr(types,
+                    quantile_generator,
+                    table = final_table) #All Day stats
 
+home_game <- map_dfr(types,
+                    quantile_generator,
+                    table = final_table %>% 
+                    filter(game_status == "home_game")) # Home Game stats
+away_game <- map_dfr(types,
+                    quantile_generator,
+                    table = final_table %>% 
+                    filter(game_status == "away_game")) # Away Game stats
+no_game <- map_dfr(types,
+                    quantile_generator,
+                    table = final_table %>% 
+                    filter(game_status == "no_game")) # No Game stats
+
+# binding all stats table into final appendix table
+appendix <- bind_rows(
+    all_day %>% mutate(day_type = "All Days",offense = types) ,
+    no_game %>% mutate(day_type = "No Game",offense = types),
+    home_game %>% mutate(day_type = "Home Game",offense = types) ,
+    away_game %>% mutate(day_type = "Away Game",offense = types)
+)
+# Formating table
+appendix <- appendix %>% 
+        pivot_longer(-c(day_type,offense),
+                names_to = "Stats", 
+                values_to = "Value") %>% 
+                pivot_wider(names_from = day_type, 
+                            values_from = Value)
+                            
+appendix %>% kable()
 ```
 
 ### Table 3: College Football Games and Number of Offenses
