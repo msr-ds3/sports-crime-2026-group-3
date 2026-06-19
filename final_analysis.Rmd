@@ -26,13 +26,14 @@ final_table <- read_csv("final_table.csv")
 ### Table 2: Distribution of Game Days by Day of the Week
 ```{r replicate-table-2}
 # Calculate number of games per day of the week
-num_of_games_per_dotw <- filtered_schedule %>% 
-    mutate(day_of_the_week = wday(game_date, label = TRUE)) %>%
+num_of_games_per_dotw <- final_table %>% 
+    mutate(day_of_the_week = wday(day, label = TRUE)) %>%
+    filter(game_status != "no_game") %>%
     group_by(day_of_the_week) %>%
-    summarize(num_of_games = n())
+    summarize(num_of_games = n_distinct(game_id))
 
 # Calculate number of {DOTW} observered over the cfb season over 2000-2005 for all ORIs
-num_of_observations_per_dotw <- template_table %>% # about 13 (num of {DOTW}) * 6 (years) * 26 (ORIs / num of agencies)
+num_of_observations_per_dotw <- final_table %>% # about 13 (num of {DOTW}) * 6 (years) * 26 (ORIs / num of agencies)
     mutate(day_of_the_week = wday(day, label = TRUE)) %>%
     group_by(day_of_the_week) %>%
     summarize(num_of_observations = n())
@@ -98,7 +99,7 @@ final_table %>%
 ### Appendix: Descriptive Statistics for Count Variables
 ```{r replicate-appendix}
 # function to get individual stats
-quantile_generator <- function(table,type){
+quantile_generator <- function(table, type){
     select(table,type) %>%
     summarise(mean = mean(.data[[type]]),
         std = sd(.data[[type]]),
@@ -107,39 +108,42 @@ quantile_generator <- function(table,type){
         Q3 = quantile(.data[[type]], 0.75),
         Q4 = quantile(.data[[type]], 0.95))
 }
-types = c("assault","vandalism") #type of offences
-#mapping out from our funciton to collect stats
+
+types = c("assault", "vandalism") # type of offences
+
+# mapping out from our funciton to collect stats
 all_day <- map_dfr(types,
-                    quantile_generator,
-                    table = final_table) #All Day stats
+                   quantile_generator,
+                   table = final_table) # All Day stats
 
 home_game <- map_dfr(types,
-                    quantile_generator,
-                    table = final_table %>% 
-                    filter(game_status == "home_game")) # Home Game stats
+                     quantile_generator,
+                     table = final_table %>% 
+                     filter(game_status == "home_game")) # Home Game stats
+
 away_game <- map_dfr(types,
-                    quantile_generator,
-                    table = final_table %>% 
-                    filter(game_status == "away_game")) # Away Game stats
+                     quantile_generator,
+                     table = final_table %>% 
+                     filter(game_status == "away_game")) # Away Game stats
+
 no_game <- map_dfr(types,
-                    quantile_generator,
-                    table = final_table %>% 
-                    filter(game_status == "no_game")) # No Game stats
+                   quantile_generator,
+                   table = final_table %>% 
+                   filter(game_status == "no_game")) # No Game stats
 
 # binding all stats table into final appendix table
-appendix <- bind_rows(
-    all_day %>% mutate(day_type = "All Days",offense = types) ,
-    no_game %>% mutate(day_type = "No Game",offense = types),
-    home_game %>% mutate(day_type = "Home Game",offense = types) ,
-    away_game %>% mutate(day_type = "Away Game",offense = types)
-)
+appendix <- bind_rows(all_day %>% mutate(day_type = "All Days",offense = types) ,
+                      no_game %>% mutate(day_type = "No Game",offense = types),
+                      home_game %>% mutate(day_type = "Home Game",offense = types) ,
+                      away_game %>% mutate(day_type = "Away Game",offense = types))
+
 # Formating table
 appendix <- appendix %>% 
-        pivot_longer(-c(day_type,offense),
-                names_to = "Stats", 
-                values_to = "Value") %>% 
-                pivot_wider(names_from = day_type, 
-                            values_from = Value)
+    pivot_longer(-c(day_type, offense),
+                 names_to = "Stats", 
+                 values_to = "Value") %>% 
+                 pivot_wider(names_from = day_type, 
+                             values_from = Value)
                             
 appendix %>% kable()
 ```
@@ -150,6 +154,7 @@ appendix %>% kable()
 # controlling for agency fixed effects, day of week, month, and year. (Don't worry about the 
 # fancier negative binomial model the authors fit.) Compare your findings to the paper's 
 # (+9% assaults and +18% vandalism for home games, with no effect for away games).
-assaults_model <- final_table %>% lm(assault ~ game_status)
-summary(assaults_model)
+
+# assaults_model <- final_table %>% lm(assault ~ game_status)
+# summary(assaults_model)
 ```

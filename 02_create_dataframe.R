@@ -7,8 +7,8 @@ library(knitr)
 # College Football Data Extraction ------------------------------------------------------------------
 # Pull schedule data from espn_cfb_schedule function
 years = c(2000:2005)
-data_func <- function(years) {
-    espn_cfb_schedule(year = years)
+data_func <- function(year) {
+    espn_cfb_schedule(year = year)
 }
 schedule <- map_dfr(years, data_func)
 
@@ -28,8 +28,8 @@ offenses <- offenses %>%
 
 # add a field to identify the offense type
 offenses <- offenses %>%
-    mutate(offense_type = case_when(str_detect(ucr_offense_code, pattern = paste("assault")) ~ "assault",
-                                    str_detect(ucr_offense_code, pattern = paste("vandalism")) ~ "vandalism")) %>%
+    mutate(offense_type = case_when(str_detect(ucr_offense_code, "assault") ~ "assault",
+                                    str_detect(ucr_offense_code, "vandalism") ~ "vandalism")) %>%
     select(-ucr_offense_code) 
 
 # College Data 
@@ -67,8 +67,8 @@ offense_counts_by_duplicate_ori <- offenses %>%
     summarise(count = n())
 
 # Choose the ORI value with the highest number of offenses
-filtered_duplicates <- full_join(offense_counts_by_duplicate_ori, duplicate_ori, by = 'ori') %>%
-    filter(is.na(count) == FALSE) %>% # The NA values mean there're no offenses associated with that ORI
+filtered_duplicates <- left_join(duplicate_ori, offense_counts_by_duplicate_ori, by = 'ori') %>%
+    filter(!is.na(count)) %>% # The NA values mean there're no offenses associated with that ORI
     group_by(team_name) %>% 
     filter(count == max(count))
 
@@ -82,7 +82,7 @@ ori_and_team_names <- read_csv("ori_and_team_names.csv")
 
 # filter offense data with new requirements
 offenses <- offenses %>%
-    filter(is.na(offense_type) == FALSE) %>% #filtering offences where type == NA
+    filter(!is.na(offense_type)) %>% #filtering offences where type == NA
     filter(ori %in% ori_and_team_names$ori) %>% # filter out duplicate ori offenses
     group_by(ori, incident_date, offense_type) %>% # find count of assault and vandalism for each day and ori combo
     summarize(count = n()) %>%
@@ -100,7 +100,7 @@ filtered_schedule_long <- filtered_schedule %>%
 
 # attach ORIs to the game data
 schedule_with_ori <- full_join(filtered_schedule_long, ori_and_team_names, by = "team_name") %>%
-    filter(is.na(ori) == FALSE) %>% # filter out the rows where teams aren't on our list
+    filter(!is.na(ori)) %>% # filter out the rows where teams aren't on our list
     rename(incident_date = "game_date") # rename to join
 
 # checking for duplicates in our schedlue data
@@ -111,7 +111,7 @@ duplicates <- schedule_with_ori %>%
     select(-count)
 
 # creating duplicates that needed to be removed    
-duplicate_table <- inner_join(duplicates, schedule_with_ori) %>%
+duplicate_table <- inner_join(duplicates, schedule_with_ori, by = c("incident_date", "ori")) %>%
     filter(home_team_name %in% c("Fighting Illini", "Falcons", "Hokies") == FALSE) # those were fake entries
 
 # filtering those duplicates form our schedule data frame 
@@ -123,15 +123,14 @@ schedule_with_ori <- anti_join(schedule_with_ori, duplicate_table,
 
 # join the cfb and offenses data on ORI and date
 test_frame <- full_join(offenses, schedule_with_ori, by = c('ori', 'incident_date', 'team_name')) %>%
-    mutate(game_status = case_when((is.na(ori) == FALSE) & (home_or_away == "home_team") ~ "home_game", 
-                                   (is.na(ori) == FALSE) & (home_or_away == "away_team") ~ "away_game",
+    mutate(game_status = case_when((!is.na(ori)) & (home_or_away == "home_team") ~ "home_game", 
+                                   (!is.na(ori)) & (home_or_away == "away_team") ~ "away_game",
                                     is.na(game_id) ~ "no_game"))
 
 # Create Final Data Frame -----------------------------------------------------------------------------
 # Creating final dataframe with cfb and crime data. 
 # Each row represents a unique day and ORI combination 
 # (n rows = 113 days * 6 years * 26 ORIs)
-years = c(2000:2005) # gets the vector from 2000 to 2005
 
 # function to build a dataframe with all dates within the football season across the 6 years
 table_func <- function(year) {
