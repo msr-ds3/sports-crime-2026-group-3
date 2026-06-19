@@ -129,20 +129,21 @@ schedule_with_ori <- full_join(filtered_schedule_long, ori_and_team_names, by = 
 
 # checking for duplicates in our schedlue data
 duplicates <- schedule_with_ori%>%
-    group_by(incident_date,ori) %>%
+    group_by(incident_date, ori) %>%
     summarise(count = n()) %>%
-    filter(count != 1)%>%select(-count)
+    filter(count != 1) %>%
+    select(-count)
 
-#creating duplicates that needed to be removed    
-duplicate_table <- inner_join(duplicates,schedule_with_ori) %>%
-    filter(home_team_name %in% c("Fighting Illini","Falcons","Hokies")==FALSE) #those were fake entries
+# creating duplicates that needed to be removed    
+duplicate_table <- inner_join(duplicates, schedule_with_ori) %>%
+    filter(home_team_name %in% c("Fighting Illini", "Falcons", "Hokies") == FALSE) # those were fake entries
 
-#filtering those duplicates form our schedule data frame 
-schedule_with_ori <- anti_join(schedule_with_ori,duplicate_table,
-        by = c("incident_date",
-        "game_id",
-        "home_team_name",
-        "away_team_name","ori")) #removing entries that are in duplicates from schedule_with_ori table
+# filtering those duplicates form our schedule data frame 
+schedule_with_ori <- anti_join(schedule_with_ori, duplicate_table,
+                               by = c("incident_date",
+                                      "game_id",
+                                      "home_team_name",
+                                      "away_team_name","ori")) #removing entries that are in duplicates from schedule_with_ori table
 
 # join the cfb and offenses data on ORI and date
 test_frame <- full_join(offenses, schedule_with_ori, by = c('ori','incident_date')) %>%
@@ -152,30 +153,37 @@ test_frame <- full_join(offenses, schedule_with_ori, by = c('ori','incident_date
 
 ```
 
-### Template Table and Final dataframe creation
-```{r template table and final dataframe creation}
-# Here we are creating our final dataframe and populating them with dates and ori combination
-year=c(2000:2005) # gets the array from 2000 to 2005
-#creating a function to create a dataframe with dates
-table_func <- function(years) {
-            data.frame(day = seq(as.Date(paste0(years,"-08-20")),
-            as.Date(paste0(years,"-12-10")),
-            by = 'day'))
-}
-#assembling all dates dataframe into one table
-dates_table <- map_dfr(year, table_func)
+### Create Final Data Frame
+```{r final-dataframe, results='hide'}
+# Creating final dataframe with cfb and crime data. 
+# Each row represents a unique day and ORI combination 
+# (n rows = 113 days * 6 years * 26 ORIs)
+years = c(2000:2005) # gets the vector from 2000 to 2005
 
-# Our table with all entries of date and ori
-template_table <- expand_grid(dates_table,ori_and_team_names$ori) %>%
-                  rename(ori = "ori_and_team_names$ori")# renaming for joining purpose
+# function to build a dataframe with all dates within the football season across the 6 years
+table_func <- function(year) {
+                data.frame(day = seq(as.Date(paste0(year,"-08-20")), # aug 20
+                                     as.Date(paste0(year,"-12-10")), # to dec 10
+                                     by = 'day'))
+             }
 
-test_frame <- rename(test_frame,day = incident_date) # renaming for joining purpose
-# Final table with all entries
-final_table <- left_join(template_table,test_frame,by=c("day","ori")) %>%
-                        replace_na(list(assault = 0,vandalism = 0)) #filling in zeros for NA's
+# assembling all dates dataframes into one table
+dates_table <- map_dfr(years, table_func)
+
+# creating a template df with 1 row for each date and ORI combo
+template_table <- expand_grid(dates_table, ori_and_team_names$ori) %>%
+                  rename(ori = "ori_and_team_names$ori") # renaming for joining purpose
+
+test_frame <- test_frame %>% 
+    rename(day = incident_date) # renaming for joining purpose
+
+# populate template table with the data that we have
+final_table <- left_join(template_table, test_frame, by = c("day", "ori")) %>%
+    replace_na(list(assault = 0, vandalism = 0, game_status = "no_game")) # filling in zeros for NAs in offense counts
 ```
 
-## Table 2: Distribution of Game Days by Day of the Week
+## Replicating Research Findings
+### Table 2: Distribution of Game Days by Day of the Week
 ```{r replicate-table-2}
 # Calculate number of games per day of the week
 num_of_games_per_dotw <- filtered_schedule %>% 
@@ -184,10 +192,10 @@ num_of_games_per_dotw <- filtered_schedule %>%
     summarize(num_of_games = n())
 
 # Calculate number of {DOTW} observered over the cfb season over 2000-2005 for all ORIs
-num_of_observatiions_per_dotw <- template_table %>% # about 13 (num of {DOTW}) * 6 (years) * 26 (ORIs / num of agencies)
-    mutate(day_of_the_week = wday(game_date, label = TRUE)) %>%
-    group_by(day_of_the_week, ori) %>%
-    summarize(num_of_oberservations = n())
+num_of_observations_per_dotw <- template_table %>% # about 13 (num of {DOTW}) * 6 (years) * 26 (ORIs / num of agencies)
+    mutate(day_of_the_week = wday(day, label = TRUE)) %>%
+    group_by(day_of_the_week) %>%
+    summarize(num_of_observations = n())
     
 # Merge results
 joined_tbl <- full_join(num_of_games_per_dotw, num_of_observations_per_dotw, by = "day_of_the_week")
@@ -196,17 +204,65 @@ joined_tbl <- full_join(num_of_games_per_dotw, num_of_observations_per_dotw, by 
 totals_row <- tibble(
   day_of_the_week = "Total",
   num_of_games = sum(joined_tbl$num_of_games),
-  num_of_offenses = sum(joined_tbl$num_of_observations))
+  num_of_observations = sum(joined_tbl$num_of_observations))
 
 tbl2 <- bind_rows(joined_tbl, totals_row) # Append totals
 
 tbl2 # display table
 ```
 
-## Distribution of Offenses on Saturdays
-```{r distribution-of-offenses-on-saturdays, results='hide'}
-# Create figures showing the mean number of offenses (assaults or vandalisms) on Saturdays 
+### Distribution of Offenses on Saturdays
+```{r distribution-of-offenses-on-saturdays}
+# Figure showing the mean number of offenses (assaults or vandalisms) on Saturdays 
 # (with standard errors), broken out by whether a home game, away game, 
 # or no game was played. 
+final_table %>% 
+    mutate(day_of_the_week = wday(day, label = TRUE)) %>%
+    filter(day_of_the_week == "Sat") %>% 
+    group_by(game_status) %>%
+    summarize(avg_offenses = mean(assault + vandalism), 
+              std_error = sd(assault + vandalism) / sqrt(n())) %>%
+    ggplot(aes(x = game_status, y = avg_offenses)) +
+    geom_errorbar(aes(ymin = avg_offenses - std_error, ymax = avg_offenses + std_error), width = 0.4) +
+    geom_point(size = 5, color = "blue") +
+    labs(x = "Game Status",
+         y = "Average Number of Offenses", 
+         title = "Mean Number of Offenses on Saturdays") + 
+    scale_x_discrete(labels = c("no_game" = "No Game",
+                                "home_game" = "Home Game",
+                                "away_game" = "Away Game"))
+```
+
+### Distribution of Offenses on Saturdays By Team
+```{r distribution-of-offenses-on-saturdays-per-team}
+# Per-team plot: Show the same comparison separately for each college town / team instead 
+# of aggregated across all teams.
+# INC -------------------------------------------- All teams have 0 data in "no_game" + created table where "team" is NA
+final_table %>% 
+    mutate(day_of_the_week = wday(day, label = TRUE)) %>%
+    filter(day_of_the_week == "Sat") %>% 
+    # filter(is.na(game_id) == FALSE) %>% # removed all rows with no games (ie no teams)
+    group_by(game_status, team_name) %>%
+    summarize(avg_offenses = mean(assault + vandalism), 
+              std_error = sd(assault + vandalism) / sqrt(n())) %>%
+    ggplot(aes(x = game_status, y = avg_offenses)) +
+    geom_errorbar(aes(ymin = avg_offenses - std_error, ymax = avg_offenses + std_error), width = 0.4) +
+    geom_point(size = 3, color = "blue") +
+    facet_wrap(~team_name) +
+    labs(x = "Game Status",
+         y = "Average Number of Offenses", 
+         title = "Mean Number of Offenses on Saturdays Per Team") + 
+    scale_x_discrete(labels = c("no_game" = "No Game",
+                                "home_game" = "Home Game",
+                                "away_game" = "Away Game"))
+```
+
+### Appendix: Descriptive Statistics for Count Variables
+```{r replicate-appendix}
+
+```
+
+### Table 3: College Football Games and Number of Offenses
+```{r replicate-regression}
 
 ```
