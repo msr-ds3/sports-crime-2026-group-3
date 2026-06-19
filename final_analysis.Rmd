@@ -11,7 +11,8 @@ output:
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(
   message = FALSE,
-  warning = FALSE
+  warning = FALSE,
+  echo = FALSE
 )
 library(cfbfastR)
 library(tidyverse)
@@ -155,6 +156,6 @@ appendix %>% kable()
 # fancier negative binomial model the authors fit.) Compare your findings to the paper's 
 # (+9% assaults and +18% vandalism for home games, with no effect for away games).
 
-# assaults_model <- final_table %>% lm(assault ~ game_status)
-# summary(assaults_model)
+assaults_model <- final_table %>% lm(assault ~ game_status)
+summary(assaults_model)
 ```
