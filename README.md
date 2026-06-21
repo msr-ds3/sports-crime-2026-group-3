@@ -174,6 +174,13 @@ Open `03_final_analysis.Rmd` in RStudio and click **Knit**, or run:
 rmarkdown::render("03_final_analysis.Rmd")
 ```
 
+### Alternatively
+After downloading NIBRS file you can view full build configuration in [Makefile](Makefile) and run following on your terminal:
+
+```makefile 
+make
+```
+
 ---
 
 ## Technologies Used
@@ -184,7 +191,7 @@ rmarkdown::render("03_final_analysis.Rmd")
 - cfbfastR
 - lubridate
 - knitr
-
+- Makefile
 ---
 
 ## References
