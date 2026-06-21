@@ -154,18 +154,21 @@ Download:
 from [OpenICPSR](https://www.openicpsr.org/openicpsr/project/118281/version/V11/view).
 
 ### 2. Format the raw data
+Run in a terminal (Git Bash):
 
 ```bash
 bash 01_format_NIBRS_data.sh
 ```
 
 ### 3. Build the final dataset
+Open RStudio (or an R session) and run:
 
 ```r
 source("02_create_dataframe.R")
 ```
 
 ### 4. Render the analysis notebook
+Open `03_final_analysis.Rmd` in RStudio and click **Knit**, or run:
 
 ```r
 rmarkdown::render("03_final_analysis.Rmd")
