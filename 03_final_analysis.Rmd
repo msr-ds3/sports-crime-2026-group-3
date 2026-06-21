@@ -158,15 +158,17 @@ appendix %>% kable()
 
 # INC ---------------------------------------------------------------------------------------
 regression_df <- final_table %>%
-    mutate(day_of_the_week = factor(wday(day, label = TRUE)),
-           month = factor(month(day)),
-           year = factor(year(day)),
-           )
+    mutate(day_of_the_week = factor(wday(day, label = TRUE), ordered = FALSE), # fixed effect : day of week
+           month = factor(month(day), ordered = FALSE), # fixed effect : month of the year
+           year = factor(year(day), ordered = FALSE), # fixed effect : year of the season
+    ) %>% 
+    mutate( home_game = case_when(game_status == "home_game" ~1, TRUE ~0), # Adding column for home_game, if there is home game that day then equals to 1 otherwise 0
+            away_game = case_when(game_status == "away_game" ~1,TRUE  ~0), # Addin column for away_game, if there is away game that day then equals to 1 otherwise 0
+    )
 
-assaults_model <- lm(assault ~ game_status + day_of_the_week + month + year, data = regression_df)
+assaults_model <- lm(assault ~ home_game + away_game + day_of_the_week + month + year, data = regression_df )
 summary(assaults_model)
-
-vandalism_model <- lm(vandalism ~ game_status, data = regression_df)
+vandalism_model <- lm(vandalism ~ home_game + away_game + day_of_the_week + month + year, data = regression_df)
 summary(vandalism_model)
 
 ```
