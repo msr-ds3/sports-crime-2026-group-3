@@ -14,7 +14,7 @@ knitr::opts_chunk$set(
   warning = FALSE,
   echo = FALSE
 )
-library(cfbfastR)
+library(MASS) # for negative binomial model
 library(tidyverse)
 library(lubridate)
 library(stringr)
@@ -176,7 +176,6 @@ assaults_model <- lm(assault ~
                     data = regression_df 
                     )
 
-summary(assaults_model)
 
 # Linear regression model for predicting number of vandalism
 vandalism_model <- lm(vandalism ~ 
@@ -188,7 +187,32 @@ vandalism_model <- lm(vandalism ~
                     factor(ori,ordered = FALSE), # fixed effect: Ori's/towns
                     data = regression_df
                     )
-                    
+summary(assaults_model)
 summary(vandalism_model)
+# We did not get statistically significant result for effect of home_game or away_game in predicting assaults and vandalism
+# Here we tried to use fancy Negative Binomial model to see if we get statistically significant result
+# Negative binomial model for prediciting vandalism
+vandalism_model_nb <- glm.nb(vandalism ~ 
+                    home_game + # effect of home game
+                    away_game + # effect of away game
+                    day_of_the_week + # fixed effect: day of week
+                    month + # fixed effect: month 
+                    year +  # fixed effect: year
+                    factor(ori,ordered = FALSE), # fixed effect: Ori's/towns
+                    data = regression_df
+                    )
 
+# Negative binomial model for assault prediction
+assaults_model_nb <- glm.nb(assault ~ 
+                    home_game + # effect of home_game
+                    away_game + # effect of away_game
+                    day_of_the_week + # fixed effect : day of week
+                    month + # fixed effect : month 
+                    year +  # fixed effect : year
+                    factor(ori, ordered = FALSE), #fixed effect : Ori's/towns
+                    data = regression_df 
+                    )
+
+summary(assaults_model_nb)
+summary(vandalism_model_nb)
 ```
