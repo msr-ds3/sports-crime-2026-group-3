@@ -187,8 +187,26 @@ vandalism_model <- lm(vandalism ~
                     factor(ori,ordered = FALSE), # fixed effect: Ori's/towns
                     data = regression_df
                     )
-summary(assaults_model)
-summary(vandalism_model)
+
+# Function to extract coefficent from model summary and create a table
+table_map <- function(models){
+    data.frame(summary(models)$coefficients) %>%
+    rownames_to_column(var = "factors") %>% 
+    as_tibble()
+}
+
+assault <- table_map(assaults_model) # regression coeff for prediciting assaults
+vandalism <- table_map(vandalism_model) # regression coeff for predicting vandalism
+
+factors_to_print <- c("(Intercept)",
+                    "home_game",
+                    "away_game"
+                    ) # for clean table only extraction coefficent for these factors
+# Table showing coeff of regression models with std error and pvalue
+bind_rows(assault %>% filter(factors %in% factors_to_print) %>% mutate(type = "Assault"),
+        vandalism %>% filter(factors %in% factors_to_print) %>% mutate(type = "Vandalism")
+        ) %>% kable()
+
 # We did not get statistically significant result for effect of home_game or away_game in predicting assaults and vandalism
 # Here we tried to use fancy Negative Binomial model to see if we get statistically significant result
 # Negative binomial model for prediciting vandalism
@@ -213,6 +231,12 @@ assaults_model_nb <- glm.nb(assault ~
                     data = regression_df 
                     )
 
-summary(assaults_model_nb)
-summary(vandalism_model_nb)
+assault_nb <- table_map(assaults_model_nb) # regression coeff for assault prediction
+vandalism_nb <- table_map(vandalism_model_nb)# regression coeff for vandalism prediction
+
+# Table showing coeff of regression models with std error and pvalue
+bind_rows(assault_nb %>% filter(factors %in% factors_to_print) %>% mutate(type = "Assault"),
+        vandalism_nb %>% filter(factors %in% factors_to_print) %>% mutate(type = "Vandalism")
+        ) %>% kable()
+
 ```
