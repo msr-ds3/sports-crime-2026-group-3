@@ -165,10 +165,30 @@ regression_df <- final_table %>%
     mutate( home_game = case_when(game_status == "home_game" ~1, TRUE ~0), # Adding column for home_game, if there is home game that day then equals to 1 otherwise 0
             away_game = case_when(game_status == "away_game" ~1,TRUE  ~0), # Addin column for away_game, if there is away game that day then equals to 1 otherwise 0
     )
+# Linear regression model for predicting number of assault
+assaults_model <- lm(assault ~ 
+                    home_game + # effect of home_game
+                    away_game + # effect of away_game
+                    day_of_the_week + # fixed effect : day of week
+                    month + # fixed effect : month 
+                    year +  # fixed effect : year
+                    factor(ori, ordered = FALSE), #fixed effect : Ori's/towns
+                    data = regression_df 
+                    )
 
-assaults_model <- lm(assault ~ home_game + away_game + day_of_the_week + month + year + factor(ori, ordered = FALSE), data = regression_df )
 summary(assaults_model)
-vandalism_model <- lm(vandalism ~ home_game + away_game + day_of_the_week + month + year + factor(ori,ordered = FALSE), data = regression_df)
+
+# Linear regression model for predicting number of vandalism
+vandalism_model <- lm(vandalism ~ 
+                    home_game + # effect of home game
+                    away_game + # effect of away game
+                    day_of_the_week + # fixed effect: day of week
+                    month + # fixed effect: month 
+                    year +  # fixed effect: year
+                    factor(ori,ordered = FALSE), # fixed effect: Ori's/towns
+                    data = regression_df
+                    )
+                    
 summary(vandalism_model)
 
 ```
