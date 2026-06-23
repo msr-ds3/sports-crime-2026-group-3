@@ -9,7 +9,8 @@ all: 03_final_analysis.html
 # https://www.openicpsr.org/openicpsr/project/118281/version/V11/download/terms?path=/openicpsr/118281/fcr:versions/V11/offense_segment_csv_1991_2024.zip&type=file
 
 unfiltered_ori_and_team_names.csv offenses.csv:offense_segment_csv_1991_2024.zip batch_header_csv_1991_2024.zip
-	01_format_NIBRS_data.sh # bash script to format and unzip 
+	bash 01_format_NIBRS_data.sh # bash script to format and unzip 
+
 
 # Filtering duplicate ORI's and creating final csv for further analysis
 final_table.csv	ori_and_team_names.csv:unfiltered_ori_and_team_names.csv offenses.csv
