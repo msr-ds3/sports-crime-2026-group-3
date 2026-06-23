@@ -1,5 +1,5 @@
 # Final Target file 
-all: 03_final_analysis.html
+all: 03_final_analysis.html 03_final_analysis.pdf
 
 # Make sure you have offense_segment_csv_1991_2024.zip, batch_header_csv_1991_2024.zip
 # You can download from:
@@ -13,10 +13,13 @@ unfiltered_ori_and_team_names.csv offenses.csv:offense_segment_csv_1991_2024.zip
 
 
 # Filtering duplicate ORI's and creating final csv for further analysis
-final_table.csv	ori_and_team_names.csv:unfiltered_ori_and_team_names.csv offenses.csv
+final_table.csv	ori_and_team_names.csv: unfiltered_ori_and_team_names.csv offenses.csv
 	Rscript 02_create_dataframe.R # R file that produces final dataframe
 	touch final_table.csv # updating timestamp 
 
 # Final Report 
-03_final_analysis.html:final_table.csv # final_table.csv from 02_create_dataframe.R is required
+03_final_analysis.html: final_table.csv # final_table.csv from 02_create_dataframe.R is required
 	Rscript -e "rmarkdown::render('03_final_analysis.Rmd')"
+
+03_final_analysis.html: final_table.csv # final_table.csv from 02_create_dataframe.R is required
+	Rscript -e "rmarkdown::render('03_final_analysis.Rmd', output_format='pdf_document')"

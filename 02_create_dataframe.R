@@ -1,3 +1,12 @@
+repo = "https://cran.r-project.org"
+install.packages("cfbfastR", repos = repo)
+install.packages("tidyverse", repos = repo)
+install.packages("lubridate", repos = repo)
+install.packages("stringr", repos = repo)
+install.packages("knitr", repos = repo)
+install.packages("MASS", repos = repo)
+install.packages("modelsummary", repos = repo)
+
 library(cfbfastR)
 library(tidyverse)
 library(lubridate)

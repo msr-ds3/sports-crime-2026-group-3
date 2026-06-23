@@ -61,5 +61,3 @@ do
         (d <= end && d >= start)
         ' unfiltered_ori_and_team_names.csv nibrs_offense_segment_${year}.csv >> offenses.csv
 done
-
-
