@@ -138,7 +138,9 @@ Statistics were computed for:
 ---
 
 ### Regression Analysis (INC)
+We tried to produce Linear regression model using Least square to see the impact of Home game days and Away game days in number of assaults and vandlism. Using this model we were not able to conclude that Home game days have statistically significant impact on assaults and vandalism so, we tried to implement negative binomial model as used on paper. Using negative model we were able to conclude paper's conclusion.
 
+We also tried to produce table 4 to see if there is a impact of wins or losses, but even after using negative binomial model we were not able to show any statistically significant impact as show in the paper. 
 
 ---
 
