@@ -243,6 +243,15 @@ bind_rows(assault_nb %>% filter(factors %in% factors_to_print) %>% mutate(type =
         ) %>% kable(caption = "Table 3.2: Negative binomial model")
 
 ```
+### Analysis for Table 3
+![Original Table 3](table_3_paper.png)
+
+Comparing our Table 3.1 with original table from paper, both Estimate for homegame and awaygame fail to statistically explain number of 
+assaults and vandalism. While on paper authors were able to show there was significant effect about 9% for assault and 18% for vandalism from home_game with p-value less than 0.01.
+To further analyse this discrapancy, we tried to use the same Negative binomial model as described in paper whose result are in Table 3.2.
+Here, we have much lower p-value compared to table 3.1 for homegame and also it shows e^0.1076^ which is +11.3% for assault and 
+e^01209^ which is about +12.9% for vandalism. This doesnot exactly match the numbers in paper but does show the conclusion that homegames lead to increase in number of assaults and vandalism,
+while away game doesnot have significant impact. Here we assume our alpha to be 0.06
 
 ### Table 4: Winning Versus Losing
 ```{r}
@@ -335,3 +344,12 @@ bind_rows(assault_win_loss_nb %>% filter(factors %in% factors_to_print) %>% muta
         vandalism_win_loss_nb %>% filter(factors %in% factors_to_print) %>% mutate(type = "Vandalism")
         ) %>% kable(caption = "Table 4.2: Negative binomial model")
 ```
+
+### Analysis for Table 4
+![Original Table 4](table_4_paper.png)
+
+Comparing our Table 4.1 with original table from paper, all Estimate for home win/loss and away win/loss fail to statistically explain number of 
+assaults and vandalism. While on paper authors were able to show there was significant impact of home game win and home game loss with p-value less than 0.01.
+To further analyse this discrapancy, we tried to use the same Negative binomial model as described in paper whose result are in Table 4.2.
+Here, we have much lower p-value compared to table 3.1 for homegame win and loss, but still we are not able to show paper's conclusion that home game win and home game loss have significant impact on assault and vandalism whereas
+awaygame win and awaygame loss deosnot have statistically significant impact.
