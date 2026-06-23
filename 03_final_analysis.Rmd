@@ -9,6 +9,12 @@ output:
     pdf_document:
         toc: yes
         toc_depth: 3
+        latex_engine: pdflatex
+    header-includes:
+        - \usepackage{float}
+        - \floatplacement{table}{H}
+        - \setlength{\parskip}{6pt}
+        - \setlength{\parindent}{0pt}
 ---
 
 ```{r setup, include=FALSE}
@@ -25,7 +31,7 @@ library(lubridate)
 library(stringr)
 library(knitr)
 
-final_table <- read_csv("final_table.csv")
+final_table <- read_csv("data/final_table.csv")
 ```
 
 ## Table 2: Distribution of Game Days by Day of the Week
@@ -54,9 +60,10 @@ totals_row <- tibble(
 
 tbl2 <- bind_rows(joined_tbl, totals_row) # Append totals
 
-tbl2 %>% kable(col.names = c("Day of Week", "Games", "Observations"), 
-                caption = "Table 2: Distribution of Game Days by Day of the Week") # display table
+tbl2 %>% kable(col.names = c("Day of Week", "Games", "Observations"))
 ```
+
+\newpage
 
 ## Distribution of Offenses on Saturdays
 ```{r distribution-of-offenses-on-saturdays}
@@ -80,6 +87,8 @@ final_table %>%
                                 "away_game" = "Away Game"))
 ```
 
+\newpage
+
 ## Distribution of Offenses on Saturdays By Team
 ```{r distribution-of-offenses-on-saturdays-per-team}
 # Per-team plot: Show the same comparison separately for each college town / team instead 
@@ -101,6 +110,8 @@ final_table %>%
                                 "home_game" = "Home Game",
                                 "away_game" = "Away Game"))
 ```
+
+\newpage
 
 ## Appendix: Descriptive Statistics for Count Variables
 ```{r replicate-appendix}
@@ -138,10 +149,10 @@ no_game <- map_dfr(types,
                    filter(game_status == "no_game")) # No Game stats
 
 # binding all stats table into final appendix table
-appendix <- bind_rows(all_day %>% mutate(day_type = "All Days",offense = types) ,
-                      no_game %>% mutate(day_type = "No Game",offense = types),
-                      home_game %>% mutate(day_type = "Home Game",offense = types) ,
-                      away_game %>% mutate(day_type = "Away Game",offense = types))
+appendix <- bind_rows(all_day %>% mutate(day_type = "All Days", offense = types) ,
+                      no_game %>% mutate(day_type = "No Game", offense = types),
+                      home_game %>% mutate(day_type = "Home Game", offense = types) ,
+                      away_game %>% mutate(day_type = "Away Game", offense = types))
 
 # Formating table
 appendix <- appendix %>% 
@@ -151,8 +162,10 @@ appendix <- appendix %>%
                  pivot_wider(names_from = day_type, 
                              values_from = Value)
                             
-appendix %>% kable(caption = "Appendix table: Descriptive Statistics for Count Variables")
+appendix %>% kable()
 ```
+
+\newpage
 
 ## Table 3: College Football Games and Number of Offenses
 
@@ -230,6 +243,8 @@ modelsummary(
 # We did not get statistically significant result for effect of home_game or away_game in predicting assaults and vandalism
 ```
 
+\newpage
+
 ```{r linear-p-val-table3, include=FALSE}
 # Linear Assault
 summary(assaults_model)$coefficients[c("home_game", "away_game"), 4]
@@ -305,6 +320,8 @@ modelsummary(
 
 ```
 
+\newpage
+
 ```{r negative-binomial-p-val-table3, include=FALSE}
 # NB Assault
 summary(assaults_model_nb)$coefficients[c("home_game", "away_game"), 4]
@@ -321,11 +338,13 @@ in assaults and an 18% increase in vandalism, both with p-values below 0.01.
 To further investigate this discrepancy, we fit a negative binomial model, following the methodology 
 described in the original paper. The results showed that home games were associated with an estimated 
 11.3% increase in assaults and a 12.9% increase in vandalism. However, only the vandalism effect 
-was statistically significant at the α = 0.05 level (p = 0.034), while the assault effect was borderline 
+was statistically significant at the alpha = 0.05 level (p = 0.034), while the assault effect was borderline 
 significant (p = 0.055). Away games were not statistically significant predictors in either model. Overall, 
 these findings partially support the paper's conclusion that home games are associated with increased 
 offense rates, although we were unable to fully replicate the magnitude and statistical significance of the 
 original results.
+
+\newpage
 
 ## Table 4: Winning Versus Losing
 
@@ -405,6 +424,8 @@ modelsummary(
 )
 ```
 
+\newpage
+
 ```{r linear-p-val-table4, include=FALSE}
 # Linear Assault
 summary(assaults_model_with_win_loss)$coefficients[c("home_game_win", "home_game_loss", "away_game_win", "away_game_loss"), 4]
@@ -482,6 +503,8 @@ modelsummary(
 )
 ```
 
+\newpage
+
 ```{r negative-binomial-p-val-table4, include=FALSE}
 # NB Assault
 summary(assaults_model_with_win_loss_nb)$coefficients[c("home_game_win", "home_game_loss", "away_game_win", "away_game_loss"), 4]
@@ -496,6 +519,6 @@ the original study reported significant effects for both home-game wins and home
 
 To further investigate this discrepancy, we fit negative binomial models that matched the methodology 
 used in the original paper. Although some p-values decreased in the negative binomial models, none 
-reached statistical significance at the α = 0.05 level. Therefore, we were unable to replicate the 
+reached statistical significance at the alpha = 0.05 level. Therefore, we were unable to replicate the 
 paper's finding that home-game outcomes significantly affect assault and vandalism rates. Consistent 
 with the original paper, away-game outcomes did not appear to have a statistically significant effect.

@@ -22,9 +22,9 @@ data_func <- function(year) {
 schedule <- map_dfr(years, data_func)
 
 # Crime Data Extraction -----------------------------------------------------------------------------
-colleges <- read_csv("colleges.csv")
-offenses <- read_csv("offenses.csv")
-unfiltered_ori_and_team_names <- read_csv("unfiltered_ori_and_team_names.csv", col_names = c("ori", "team_name"))
+colleges <- read_csv("data/colleges.csv")
+offenses <- read_csv("data/offenses.csv")
+unfiltered_ori_and_team_names <- read_csv("data/unfiltered_ori_and_team_names.csv", col_names = c("ori", "team_name"))
 
 # Filter Crime Data & College Data ------------------------------------------------------------------
 # Crime Data
@@ -84,10 +84,10 @@ filtered_duplicates <- left_join(duplicate_ori, offense_counts_by_duplicate_ori,
 # Create a new CSV file with no duplicates
 unfiltered_ori_and_team_names %>%
     filter(!(ori %in% duplicate_ori$ori) | (ori %in% filtered_duplicates$ori) ) %>%  # Keep rows who don't have duplicates + Add the filtered duplicates
-    write_csv("ori_and_team_names.csv")
+    write_csv("data/ori_and_team_names.csv")
 
 # importing our ori and team mapping
-ori_and_team_names <- read_csv("ori_and_team_names.csv")
+ori_and_team_names <- read_csv("data/ori_and_team_names.csv")
 
 # filter offense data with new requirements
 offenses <- offenses %>%
@@ -163,4 +163,4 @@ test_frame <- test_frame %>%
 final_table <- left_join(template_table, test_frame, by = c("day", "ori", "team_name")) %>%
     replace_na(list(assault = 0, vandalism = 0, game_status = "no_game")) # filling in zeros for NAs in offense counts
 
-write_csv(final_table, "final_table.csv")
+write_csv(final_table, "data/final_table.csv")
