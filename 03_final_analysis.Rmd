@@ -50,7 +50,8 @@ totals_row <- tibble(
 
 tbl2 <- bind_rows(joined_tbl, totals_row) # Append totals
 
-tbl2 %>% kable(col.names = c("Day of Week", "Games", "Observations")) # display table
+tbl2 %>% kable(col.names = c("Day of Week", "Games", "Observations"), 
+                caption = "Table 2: Distribution of Game Days by Day of the Week") # display table
 ```
 
 ### Distribution of Offenses on Saturdays
@@ -146,7 +147,7 @@ appendix <- appendix %>%
                  pivot_wider(names_from = day_type, 
                              values_from = Value)
                             
-appendix %>% kable()
+appendix %>% kable(caption = "Appendix table: Descriptive Statistics for Count Variables")
 ```
 
 ### Table 3: College Football Games and Number of Offenses
@@ -165,7 +166,8 @@ regression_df <- final_table %>%
     mutate( home_game = case_when(game_status == "home_game" ~1, TRUE ~0), # Adding column for home_game, if there is home game that day then equals to 1 otherwise 0
             away_game = case_when(game_status == "away_game" ~1,TRUE  ~0), # Addin column for away_game, if there is away game that day then equals to 1 otherwise 0
     )
-# Linear regression model for predicting number of assault
+# Linear Models
+## Linear regression model for predicting number of assault
 assaults_model <- lm(assault ~ 
                     home_game + # effect of home_game
                     away_game + # effect of away_game
@@ -177,7 +179,7 @@ assaults_model <- lm(assault ~
                     )
 
 
-# Linear regression model for predicting number of vandalism
+## Linear regression model for predicting number of vandalism
 vandalism_model <- lm(vandalism ~ 
                     home_game + # effect of home game
                     away_game + # effect of away game
@@ -195,8 +197,8 @@ table_map <- function(models){
     as_tibble()
 }
 
-assault <- table_map(assaults_model) # regression coeff for prediciting assaults
-vandalism <- table_map(vandalism_model) # regression coeff for predicting vandalism
+assault <- table_map(assaults_model) %>% rename(P_value = Pr...t..) # regression coeff for prediciting assaults
+vandalism <- table_map(vandalism_model) %>% rename(P_value = Pr...t..) # regression coeff for predicting vandalism
 
 factors_to_print <- c("(Intercept)",
                     "home_game",
@@ -205,11 +207,12 @@ factors_to_print <- c("(Intercept)",
 # Table showing coeff of regression models with std error and pvalue
 bind_rows(assault %>% filter(factors %in% factors_to_print) %>% mutate(type = "Assault"),
         vandalism %>% filter(factors %in% factors_to_print) %>% mutate(type = "Vandalism")
-        ) %>% kable()
+        ) %>% kable(caption = "Table 3.1: Least square model")
 
 # We did not get statistically significant result for effect of home_game or away_game in predicting assaults and vandalism
 # Here we tried to use fancy Negative Binomial model to see if we get statistically significant result
-# Negative binomial model for prediciting vandalism
+# Negative Binomial Models
+# #Negative binomial model for prediciting vandalism
 vandalism_model_nb <- glm.nb(vandalism ~ 
                     home_game + # effect of home game
                     away_game + # effect of away game
@@ -220,7 +223,7 @@ vandalism_model_nb <- glm.nb(vandalism ~
                     data = regression_df
                     )
 
-# Negative binomial model for assault prediction
+## Negative binomial model for assault prediction
 assaults_model_nb <- glm.nb(assault ~ 
                     home_game + # effect of home_game
                     away_game + # effect of away_game
@@ -231,12 +234,104 @@ assaults_model_nb <- glm.nb(assault ~
                     data = regression_df 
                     )
 
-assault_nb <- table_map(assaults_model_nb) # regression coeff for assault prediction
-vandalism_nb <- table_map(vandalism_model_nb)# regression coeff for vandalism prediction
+assault_nb <- table_map(assaults_model_nb) %>% rename(P_value = Pr...z..)# regression coeff for assault prediction
+vandalism_nb <- table_map(vandalism_model_nb) %>% rename(P_value = Pr...z..)# regression coeff for vandalism prediction
 
 # Table showing coeff of regression models with std error and pvalue
 bind_rows(assault_nb %>% filter(factors %in% factors_to_print) %>% mutate(type = "Assault"),
         vandalism_nb %>% filter(factors %in% factors_to_print) %>% mutate(type = "Vandalism")
-        ) %>% kable()
+        ) %>% kable(caption = "Table 3.2: Negative binomial model")
 
+```
+
+### Table 4: Winning Versus Losing
+```{r}
+# Extracting cols to get factors for wins and losses
+regression_df <- regression_df %>% 
+    mutate( home_game_loss = case_when((home_game == 1 & home_win == 0) ~1, TRUE ~0), # Adding column for home_game_loss, 1 if home_game and home_loss otherwise 0
+            away_game_loss = case_when((away_game == 1 & away_win == 0) ~1,TRUE  ~0), # Addin column for away_game_loss, 1 if away_game and away_loss otherwise 0
+            home_game_win = case_when((home_game == 1 & home_win == 1) ~1, TRUE ~0), # Adding column for home_game_win, 1 if home_game and home_win otherwise 0
+            away_game_win = case_when((away_game == 1 & away_win == 1) ~1,TRUE  ~0), # Adding column for away_game_win, 1 if away_game and away_win otherwise 0
+    )
+
+# Linear models
+## Linear regression model for predicting number of assaults
+assaults_model_with_win_loss <- lm(assault ~ 
+                    home_game_win + # effect of home game win at home's ori
+                    home_game_loss + #effect of home game loss at home's Ori
+                    away_game_win + # effect of away game win at away's ori
+                    away_game_loss + #effect of away game loss at away's ori
+                    day_of_the_week + # fixed effect : day of week
+                    month + # fixed effect : month 
+                    year +  # fixed effect : year
+                    factor(ori, ordered = FALSE), #fixed effect : Ori's/towns
+                    data = regression_df 
+                    )
+
+## Linear regression model for predicting number of vandalism
+vandalism_model_with_win_loss <- lm(vandalism ~ 
+                    home_game_win + # effect of home game win at home's ori
+                    home_game_loss + #effect of home game loss at home's Ori
+                    away_game_win + # effect of away game win at away's ori
+                    away_game_loss + #effect of away game loss at away's ori
+                    day_of_the_week + # fixed effect: day of week
+                    month + # fixed effect: month 
+                    year +  # fixed effect: year
+                    factor(ori,ordered = FALSE), # fixed effect: Ori's/towns
+                    data = regression_df
+                    )
+
+assault_win_loss <- table_map(assaults_model_with_win_loss) %>% 
+                    rename(P_value = Pr...t..) # regression coeff for prediciting assaults
+vandalism_win_loss <- table_map(vandalism_model_with_win_loss) %>% 
+                      rename(P_value = Pr...t..) # regression coeff for predicting vandalism
+
+factors_to_print <- c("(Intercept)",
+                    "home_game_win",
+                    "away_game_win",
+                    "home_game_loss",
+                    "away_game_loss"
+                    ) # table to only print follwing factors
+
+# Final table with coeff and factors along with std error and pvalue                    
+bind_rows(assault_win_loss %>% filter(factors %in% factors_to_print) %>% mutate(type = "Assault"),
+        vandalism_win_loss %>% filter(factors %in% factors_to_print) %>% mutate(type = "Vandalism")
+        ) %>% kable(caption = "Table 4.1: Least square model")
+
+# Negative Binomial Model
+## Negative binomial model for prediciting vandalism
+vandalism_model_with_win_loss_nb <- glm.nb(vandalism ~ 
+                    home_game_win + # effect of home game win at home's ori
+                    home_game_loss + #effect of home game loss at home's Ori
+                    away_game_win + # effect of away game win at away's ori
+                    away_game_loss + #effect of away game loss at away's ori
+                    day_of_the_week + # fixed effect: day of week
+                    month + # fixed effect: month 
+                    year +  # fixed effect: year
+                    factor(ori,ordered = FALSE), # fixed effect: Ori's/towns
+                    data = regression_df
+                    )
+
+## Negative binomial model for assault prediction
+assaults_model_with_win_loss_nb <- glm.nb(assault ~ 
+                    home_game_win + # effect of home game win at home's ori
+                    home_game_loss + #effect of home game loss at home's Ori
+                    away_game_win + # effect of away game win at away's ori
+                    away_game_loss + #effect of away game loss at away's ori
+                    day_of_the_week + # fixed effect : day of week
+                    month + # fixed effect : month 
+                    year +  # fixed effect : year
+                    factor(ori, ordered = FALSE), #fixed effect : Ori's/towns
+                    data = regression_df 
+                    )
+
+assault_win_loss_nb <- table_map(assaults_model_with_win_loss_nb) %>% 
+                        rename(P_value = Pr...z..)# regression coeff for assault prediction
+vandalism_win_loss_nb <- table_map(vandalism_model_with_win_loss_nb) %>% 
+                        rename(P_value = Pr...z..)# regression coeff for vandalism prediction
+
+# Table showing coeff of regression models with std error and pvalue
+bind_rows(assault_win_loss_nb %>% filter(factors %in% factors_to_print) %>% mutate(type = "Assault"),
+        vandalism_win_loss_nb %>% filter(factors %in% factors_to_print) %>% mutate(type = "Vandalism")
+        ) %>% kable(caption = "Table 4.2: Negative binomial model")
 ```
