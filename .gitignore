@@ -5,6 +5,7 @@
 .ipynb_checkpoints
 *.gz
 *.csv
+!data/colleges.csv
 *.tsv
 *.html
 *.RData
