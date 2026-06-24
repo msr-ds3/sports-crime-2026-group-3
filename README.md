@@ -136,11 +136,30 @@ Statistics were computed for:
 - No game days
 
 ---
+### Regression Analysis
+We estimate the relationship between college football games and daily crime (assault and vandalism) in college towns from 2000–2005.
 
-### Regression Analysis (INC)
-We tried to produce Linear regression model using Least square to see the impact of Home game days and Away game days in number of assaults and vandlism. Using this model we were not able to conclude that Home game days have statistically significant impact on assaults and vandalism so, we tried to implement negative binomial model as used on paper. Using negative model we were able to conclude paper's conclusion.
+#### Models
 
-We also tried to produce table 4 to see if there is a impact of wins or losses, but even after using negative binomial model we were not able to show any statistically significant impact as show in the paper. 
+We estimate three specifications:
+
+- Linear regression model with game indicators + time and agency fixed effects  
+- Negative binomial regression for count data  
+- Win/loss models separating game outcomes  
+
+#### Key Results
+
+- Linear model: no statistically significant effects for home or away games  
+- Negative binomial: home games increase crime, especially vandalism (significant at 5%)  
+- Assault effects are positive but weakly significant  
+- Away games show no consistent effect  
+- Win/loss outcomes are not statistically significant  
+
+#### Summary
+
+- Evidence of a modest home game effect on crime in count models  
+- No support for away game effects or game outcomes  
+- Results partially align with Rees & Schnepel (2009), but are smaller and less robust
 
 ---
 

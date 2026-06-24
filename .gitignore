@@ -7,7 +7,6 @@
 *.csv
 !data/colleges.csv
 *.tsv
-*.html
 *.RData
 *.Rdata
 *.rdata
