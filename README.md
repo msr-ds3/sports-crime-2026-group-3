@@ -199,7 +199,7 @@ rmarkdown::render("03_final_analysis.Rmd")
 After downloading NIBRS file you can view full build configuration in [Makefile](Makefile) and run following on your terminal:
 
 ```makefile 
-make
+make all
 ```
 
 ---
