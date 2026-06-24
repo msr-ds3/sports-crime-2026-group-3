@@ -172,7 +172,7 @@ Download:
 - Offense segment CSV files
 - Batch header CSV file
 
-from [OpenICPSR](https://www.openicpsr.org/openicpsr/project/118281/version/V11/view).
+from [OpenICPSR](https://www.openicpsr.org/openicpsr/project/118281/version/V11/view) and move the two zip files into the 'data' directory.
 
 ### 2. Format the raw data
 Run in a terminal (Git Bash):
